@@ -75,3 +75,8 @@ if any(metrics[k] < THRESHOLDS[k] for k in THRESHOLDS):
 - [ ] Contract test + éval **avant** le tag v2.1.0.
 - [ ] Une dégradation volontaire fait **exit 1** (testé).
 - [ ] Résultats reproductibles (`random_state` fixé).
+
+> 💡 **Récap** : on **réutilise** la Pipeline M1 (on change la donnée, pas la recette),
+> on **enrichit** le train avec les feedbacks (jointure features), et on **bloque**
+> (exit 1) si le contract test ou l'évaluation continue échoue **avant** le tag v2.1.0.
+> Jamais de déploiement à l'aveugle.

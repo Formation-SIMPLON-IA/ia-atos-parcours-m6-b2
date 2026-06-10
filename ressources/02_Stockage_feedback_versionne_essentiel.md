@@ -73,3 +73,8 @@ print("feedbacks:", n)
 - [ ] Jointure feedbacks ⋈ prod_scored fonctionnelle.
 - [ ] Pas de doublon à la ré-insertion.
 - [ ] Pas de PII stockée.
+
+> 💡 **Récap** : à 8 sur un repo, **SQLite** l'emporte souvent sur le CSV (intégrité,
+> PK anti-doublon, pas de conflit de concurrence). Schéma minimal `request_id (PK)` /
+> `true_label` / `comments` / `created_at`. La **jointure** vers `prod_scored` récupère
+> les features pour le réentraînement. RGPD : pas de PII dans la table de feedback.

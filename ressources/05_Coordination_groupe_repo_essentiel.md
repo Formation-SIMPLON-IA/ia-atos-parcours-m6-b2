@@ -75,3 +75,8 @@ Tracez tout dans `decisions.md`.
 - [ ] J'ai assuré **mon créneau de lead**.
 - [ ] Les synchros jeudi 17h / vendredi 9h ont eu lieu (documentées).
 - [ ] **8 contributeurs** visibles dans l'historique.
+
+> 💡 **Récap** : à 8, ce qui sauve = **branches nominatives** (jamais `main` direct),
+> **lead tournant** (chacun pilote une fois — CT2), **interfaces fixées tôt** entre les
+> 4 paires, et **synchros courtes** aux jalons (jeudi 17h / vendredi 9h). Objectif :
+> 8 contributeurs visibles, pas 2 qui portent tout.

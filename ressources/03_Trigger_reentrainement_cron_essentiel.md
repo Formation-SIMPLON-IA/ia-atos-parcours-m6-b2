@@ -72,3 +72,10 @@ if len(feedbacks) < args.min_feedback:
 - [ ] Le job utilise des chemins absolus + venv.
 - [ ] `workflow_dispatch` permet le déclenchement manuel.
 - [ ] Les logs sont redirigés (pas d'échec silencieux).
+
+> 💡 **Récap** : on réentraîne **périodiquement et sous condition** (toutes les 6 h,
+> **si** ≥ seuil de feedbacks). Le garde-seuil sort en **succès** (exit 0) sous le seuil —
+> ce n'est pas une erreur. Chemins **absolus** + venv dans le cron, logs redirigés,
+> `workflow_dispatch` pour la démo manuelle. Tester l'expression sur crontab.guru.
+
+*Anti-spam : après un réentraînement, marquer/consommer les feedbacks pour ne pas re-déclencher aussitôt.*
