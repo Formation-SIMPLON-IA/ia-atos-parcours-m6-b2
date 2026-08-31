@@ -21,8 +21,19 @@ validé), pas une UI d'annotation (autre métier).
   simple **jointure**, pas de réconciliation complexe.
 - **Validation métier** : rejeter un `request_id` **inconnu** (404) — on ne
   stocke que des feedbacks rattachables à une prédiction réelle.
-- **Idempotence** : `INSERT OR REPLACE` sur `request_id` (clé primaire) évite les
-  doublons si un feedback est renvoyé.
+- **Idempotence ≠ écrasement** : renvoyer **deux fois le même feedback** ne doit
+  rien casser (rejeu réseau). Mais renvoyer **un label différent** sur le même
+  `request_id` n'est pas un rejeu, c'est une **contradiction** : deux vérités
+  terrain opposées sur le même dossier. Répondez **409** et laissez un humain
+  arbitrer. `INSERT OR REPLACE` écraserait la première vérité en silence — et
+  cette annotation part ensuite dans le jeu d'entraînement.
+
+  | Cas | Réponse |
+  |---|---|
+  | `request_id` inconnu | **404** |
+  | label hors {0,1} | **422** (Pydantic) |
+  | même `request_id`, même label | **201**, sans doublon |
+  | même `request_id`, label différent | **409** |
 - **Service léger** : une route ajoutée au backend M5, ou un micro-service
   FastAPI dédié — au choix.
 
@@ -51,9 +62,14 @@ def post_feedback(fb: Feedback):
 ## Exercice guidé
 
 1. Complétez le service `services/feedback/` : route `POST /feedback` + `/health`
-   + `/feedback/count` (utile au trigger).
+   + `/feedback/count` (qui renvoie le total **et** le nombre de feedbacks non
+   consommés — c'est ce dernier qui pilote le trigger).
 2. Chargez les `request_id` valides depuis `prod_scored.csv` au démarrage (lifespan).
-3. Testez : 200 feedbacks valides → 201 ; un id inconnu → 404 ; label 5 → 422.
+3. Testez les 4 cas : **insérez successivement** 200 feedbacks valides (un POST
+   par feedback, l'endpoint est unitaire) → chaque appel renvoie **201** et
+   `GET /feedback/count` renvoie `{"count": 200, "new": 200}` ; un id inconnu →
+   **404** ; un label 5 → **422** ; le même `request_id` avec un label opposé →
+   **409**.
 
 ## Pièges fréquents
 

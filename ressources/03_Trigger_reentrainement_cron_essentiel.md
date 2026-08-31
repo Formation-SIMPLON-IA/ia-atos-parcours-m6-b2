@@ -15,14 +15,30 @@ pas besoin d'un orchestrateur lourd (Prefect/Airflow) pour M6.
 
 - **cron** : une ligne `* * * * * commande` planifie une exécution. `0 */6 * * *`
   = toutes les 6 h. (Testez votre expression sur crontab.guru.)
-- **Garde-seuil** : le script vérifie `len(feedbacks) >= seuil` **avant** d'agir ;
-  sinon il **ne fait rien** et sort en succès (exit 0). Ce n'est pas une erreur.
+- **Garde-seuil** : le script vérifie **avant** d'agir que le nombre de
+  feedbacks **non encore consommés** atteint le seuil ; sinon il **ne fait rien**
+  et sort en succès (exit 0). Ce n'est pas une erreur.
+- ⚠️ **Compter les nouveaux, pas le total.** `COUNT(*) >= 200` est un piège : une
+  fois les 200 atteints, la condition reste vraie **pour toujours** et le cron
+  réentraîne toutes les 6 h sur les mêmes données. On compte
+  `WHERE used_for_training = 0`, et on marque les lignes consommées après un
+  entraînement réussi.
+- 🎯 **Le trigger ne décide pas du déploiement.** Il répond à *« pourquoi
+  réentraîner ? »*. La question *« pourquoi déployer ? »* est une **décision
+  séparée** (cf. mini-cours 04). Un réentraînement déclenché peut parfaitement
+  se terminer par un rejet : c'est une issue normale.
 - **Idempotence** : relancer le job ne doit pas casser l'état (pas de double
   réentraînement concurrent ; lock simple si besoin).
 - **Déclenchement manuel** : en CI, `workflow_dispatch` permet de lancer le
   réentraînement à la demande (utile pour la démo).
-- **Anti-spam** : après un réentraînement, on « consomme » ou marque les
-  feedbacks pour ne pas re-déclencher immédiatement.
+- **Anti-spam** : marquer les feedbacks consommés **après un entraînement
+  réussi** est ce qui rend le trigger sain — c'est le même mécanisme que le
+  comptage ci-dessus, vu de l'autre bout.
+- ⭐ **Second déclencheur (bonus, facultatif)** : « ou dérive confirmée », branché
+  sur la détection M6-B1. À ne tenter **qu'une fois la boucle complète verte** :
+  deux mécanismes à déboguer en 6 h font dérailler le planning, et « dérive
+  confirmée » doit renvoyer à une **fonction concrète** de M6-B1, sinon le critère
+  n'est pas vérifiable.
 
 ## Exemple minimal qui tourne
 
@@ -32,17 +48,21 @@ pas besoin d'un orchestrateur lourd (Prefect/Airflow) pour M6.
 ```
 
 ```python
-# garde-seuil dans retrain.py
-if len(feedbacks) < args.min_feedback:
-    print({"action": "skip"}); return 0   # rien à faire, pas une erreur
+# garde-seuil dans retrain.py — on compte les NON CONSOMMÉS
+n_new = int((feedbacks["used_for_training"] == 0).sum())
+if n_new < args.min_feedback:
+    print({"action": "skip", "reason": f"{n_new} nouveaux < {args.min_feedback}"})
+    return 0                              # rien à faire, pas une erreur
 ```
 
 ## Exercice guidé
 
 1. Écrivez l'expression cron pour « toutes les 6 h » et vérifiez-la sur
    crontab.guru.
-2. Implémentez le garde-seuil dans `retrain.py` : 199 feedbacks → skip (exit 0),
-   200 → exécute.
+2. Implémentez le garde-seuil dans `retrain.py` : 199 **nouveaux** feedbacks →
+   skip (exit 0), 200 → exécute.
+   Puis vérifiez le piège : relancez **immédiatement** après un entraînement
+   réussi. Si le job se redéclenche, c'est que vous comptez le total.
 3. Ajoutez `workflow_dispatch` au workflow CI pour le déclenchement manuel.
 
 ## Pièges fréquents

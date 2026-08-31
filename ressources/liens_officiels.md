@@ -22,4 +22,3 @@ Dernière vérification : 2026-06-10
 
 ## Optionnel (bonus)
 
-- **Prefect — docs** : https://docs.prefect.io/
